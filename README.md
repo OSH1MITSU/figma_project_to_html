@@ -33,4 +33,4 @@
 3. Нажмите кнопку **"Анализировать выбранное"**, чтобы увидеть данные в формате JSON.
 4. Нажмите **"Экспорт в PNG"**, чтобы мгновенно скачать изображение фрейма.
 
-![test_plugin](/Users/osh1/Documents/GitHub/figma_project_to_html/images/test_plugin.png)
+![test_plugin](/images/test_plugin.png)

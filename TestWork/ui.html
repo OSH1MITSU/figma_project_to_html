@@ -3,56 +3,67 @@
 <head>
   <style>
     body { 
-      font-family: Inter, sans-serif; 
-      padding: 20px; 
-      background: #f9f9f9; 
-      color: #333; 
+      font-family: sans-serif; 
+      padding: 15px; 
+      background: #fff; 
+      margin: 0; 
+    }
+    .controls { 
+      position: sticky; 
+      top: 0; 
+      background: #fff; 
+      padding-bottom: 10px; 
+      z-index: 10; 
+      border-bottom: 1px solid #eee; 
     }
     button { 
       width: 100%; 
       cursor: pointer; 
-      padding: 12px; 
-      margin-bottom: 8px;
+      padding: 10px; 
+      margin-top: 5px;
       background: #18a0fb; 
       color: white; 
       border: none; 
-      border-radius: 6px; 
-      font-weight: 500;
+      border-radius: 4px; 
     }
-    button:hover { 
-      background: #0d8de3; 
-    }
-    .secondary { 
-      background: #333; 
+    #copy-btn { 
+      background: #18a0fb; 
+      display: none; 
     }
     pre { 
-      background: #fff; 
-      border: 1px solid #e5e5e5; 
+      font-size: 11px; 
+      background: #f5f5f5; 
       padding: 10px; 
-      font-size: 11px; 
-      border-radius: 6px; 
-      max-height: 350px; 
-      overflow: auto;
-    }
-    .label { 
-      font-size: 11px; 
-      font-weight: bold; 
-      margin-bottom: 5px; 
-      color: #888; 
-      text-transform: uppercase; 
+      white-space: pre-wrap; 
+      word-wrap: break-word; 
     }
   </style>
 </head>
 <body>
-  <button id="analyze">Анализировать структуру</button>
-  <button id="export" class="secondary">Экспорт фрейма в PNG</button>
+  <div class="controls">
+    <button id="analyze">Анализировать всё дерево</button>
+    <button id="copy-btn">Скопировать результат (JSON)</button>
+    <button id="export" style="background: #18a0fb;">Скачать PNG</button>
+  </div>
   
-  <div class="label">Результат анализа:</div>
-  <pre id="output">Здесь появится дерево элементов с CSS и переменными...</pre>
+  <pre id="output">Результат появится здесь...</pre>
 
   <script>
+    let lastData = null;
+
     document.getElementById('analyze').onclick = () => {
+      document.getElementById('output').textContent = "Анализирую...";
       parent.postMessage({ pluginMessage: { type: 'analyze-frame' } }, '*');
+    };
+
+    document.getElementById('copy-btn').onclick = () => {
+      const el = document.createElement('textarea');
+      el.value = JSON.stringify(lastData, null, 2);
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand('copy');
+      document.body.removeChild(el);
+      alert("Скопировано в буфер обмена!");
     };
 
     document.getElementById('export').onclick = () => {
@@ -62,7 +73,9 @@
     window.onmessage = (event) => {
       const msg = event.data.pluginMessage;
       if (msg.type === 'analysis-result') {
+        lastData = msg.data;
         document.getElementById('output').textContent = JSON.stringify(msg.data, null, 2);
+        document.getElementById('copy-btn').style.display = "block";
       }
       if (msg.type === 'download-png') {
         const blob = new Blob([msg.bytes], { type: 'image/png' });

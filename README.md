@@ -25,6 +25,13 @@
 *   `ui.html` — Интерфейс плагина.
 *   `manifest.json` — Конфигурация плагина и разрешения.
 *   `code.js` — Скомпилированный файл (генерируется автоматически).
+  
+## 🚀 Инструкция по сборке
+Плагин находится в директории `TestWork/`.
+1. Перейдите в папку: `cd TestWork`
+2. Установите зависимости: `npm install`
+3. Соберите проект: `npm run build` (появится файл `code.js`).
+4. В Figma: `Plugins -> Development -> Import plugin from manifest...` и выберите `TestWork/manifest.json`.
 
 ## 📝 Использование
 

@@ -2,37 +2,53 @@
 <html>
 <head>
   <style>
-    body { font-family: sans-serif; 
-        padding: 15px; 
-        display: flex; 
-        flex-direction: column; 
-        gap: 10px; 
-        background: #fff; }
-    button { cursor: pointer; 
-        padding: 10px; 
-        background: #18a0fb; 
-        color: white; 
-        border: none; 
-        border-radius: 6px; 
-        font-weight: bold; }
-    button:hover { background: #0d8de3; }
-    pre { background: #f5f5f5; 
-        padding: 8px; 
-        font-size: 11px; 
-        border: 1px solid #ddd; 
-        max-height: 150px; 
-        overflow: auto; 
-        white-space: pre-wrap; }
-    label { font-size: 12px; 
-        color: #555; }
+    body { 
+      font-family: Inter, sans-serif; 
+      padding: 20px; 
+      background: #f9f9f9; 
+      color: #333; 
+    }
+    button { 
+      width: 100%; 
+      cursor: pointer; 
+      padding: 12px; 
+      margin-bottom: 8px;
+      background: #18a0fb; 
+      color: white; 
+      border: none; 
+      border-radius: 6px; 
+      font-weight: 500;
+    }
+    button:hover { 
+      background: #0d8de3; 
+    }
+    .secondary { 
+      background: #333; 
+    }
+    pre { 
+      background: #fff; 
+      border: 1px solid #e5e5e5; 
+      padding: 10px; 
+      font-size: 11px; 
+      border-radius: 6px; 
+      max-height: 350px; 
+      overflow: auto;
+    }
+    .label { 
+      font-size: 11px; 
+      font-weight: bold; 
+      margin-bottom: 5px; 
+      color: #888; 
+      text-transform: uppercase; 
+    }
   </style>
 </head>
 <body>
-  <button id="analyze">Анализировать выбранное</button>
-  <button id="export">Экспорт в PNG</button>
+  <button id="analyze">Анализировать структуру</button>
+  <button id="export" class="secondary">Экспорт фрейма в PNG</button>
   
-  <label>Результат (Лог):</label>
-  <pre id="output">Выберите фрейм и нажмите кнопку</pre>
+  <div class="label">Результат анализа:</div>
+  <pre id="output">Здесь появится дерево элементов с CSS и переменными...</pre>
 
   <script>
     document.getElementById('analyze').onclick = () => {
@@ -42,20 +58,19 @@
     document.getElementById('export').onclick = () => {
       parent.postMessage({ pluginMessage: { type: 'export-png' } }, '*');
     };
+
     window.onmessage = (event) => {
       const msg = event.data.pluginMessage;
-
       if (msg.type === 'analysis-result') {
         document.getElementById('output').textContent = JSON.stringify(msg.data, null, 2);
       }
-
       if (msg.type === 'download-png') {
         const blob = new Blob([msg.bytes], { type: 'image/png' });
         const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `${msg.name}.png`;
-        link.click();
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${msg.name}.png`;
+        a.click();
       }
     };
   </script>

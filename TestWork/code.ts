@@ -1,44 +1,78 @@
-figma.showUI(__html__, { width: 320, height: 400 });
+figma.showUI(__html__, { width: 400, height: 600 });
 
-figma.ui.onmessage = async (msg) => {
-  const selection = figma.currentPage.selection;
-  const frame = selection.find(node => node.type === "FRAME") as FrameNode;
+async function getVariableName(variableId: string): Promise<string> {
+  try {
+    const variable = await figma.variables.getVariableByIdAsync(variableId);
+    return variable ? variable.name : "Unknown Variable";
+  } catch {
+    return "Error reading variable";
+  }
+}
 
-  if (!frame) {
-    figma.notify("❌ Сначала выберите фрейм");
-    return;
+async function analyzeNode(node: SceneNode): Promise<any> {
+  const data: any = {
+    name: node.name,
+    type: node.type,
+    css: {},
+    variables: {}
+  };
+
+  if ("getCSSAsync" in node) {
+    data.css = await node.getCSSAsync();
   }
 
-  if (msg.type === 'analyze-frame') {
-    const css = await frame.getCSSAsync();
-    
-    const childrenInfo = await Promise.all(frame.children.map(async (child) => {
-      let varName = "Нет переменной";
-      if ("boundVariables" in child && child.boundVariables && child.boundVariables.fills) {
-        const varId = child.boundVariables.fills[0].id;
-        const variable = await figma.variables.getVariableByIdAsync(varId);
-        if (variable) varName = variable.name;
+  if ("boundVariables" in node && node.boundVariables) {
+    const bound = node.boundVariables;
+    for (const property in bound) {
+      const varRef = (bound as any)[property];
+      
+      if (Array.isArray(varRef) && varRef.length > 0) {
+        data.variables[property] = await getVariableName(varRef[0].id);
+      } else if (varRef && varRef.id) {
+        data.variables[property] = await getVariableName(varRef.id);
       }
+    }
+  }
 
-      return { name: child.name, type: child.type, variable: varName };
-    }));
+  if ("children" in node) {
+    data.children = await Promise.all(
+      node.children.map(child => analyzeNode(child))
+    );
+  }
 
-    const result = {
-      frameName: frame.name,
-      css: css,
-      elements: childrenInfo
-    };
+  return data;
+}
 
-    figma.ui.postMessage({ type: 'analysis-result', data: result });
+figma.ui.onmessage = async (msg) => {
+  if (msg.type === 'analyze-frame') {
+    const selection = figma.currentPage.selection;
+
+    if (selection.length !== 1) {
+      figma.notify("⚠️ Выберите ровно один объект");
+      return;
+    }
+
+    const selectedNode = selection[0];
+    if (selectedNode.type !== "FRAME") {
+      figma.notify("⚠️ Выбранный объект должен быть фреймом");
+      return;
+    }
+
+    figma.notify("🔍 Анализ структуры...");
+    
+    const fullStructure = await analyzeNode(selectedNode);
+
+    figma.ui.postMessage({ type: 'analysis-result', data: fullStructure });
+    figma.notify("✅ Готово");
   }
 
   if (msg.type === 'export-png') {
-    const bytes = await frame.exportAsync({
-      format: "PNG",
-      constraint: { type: "SCALE", value: 2 }
-    });
-
-    figma.ui.postMessage({ type: 'download-png', bytes, name: frame.name });
-    figma.notify("✅ PNG готов");
+    const selection = figma.currentPage.selection;
+    if (selection.length === 1 && selection[0].type === "FRAME") {
+      const bytes = await selection[0].exportAsync({ format: "PNG", constraint: { type: "SCALE", value: 2 } });
+      figma.ui.postMessage({ type: 'download-png', bytes, name: selection[0].name });
+    } else {
+      figma.notify("⚠️ Выберите один фрейм для экспорта");
+    }
   }
 };
